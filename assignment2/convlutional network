@@ -1,0 +1,56 @@
+class conv():
+    def __init__(self,inchannel,outchannel,kernel_size,stride,padding):
+        self.inchannel=inchannel
+        self.outchannel=outchannel
+        if isinstance(kernel_size,int):
+           self.kernel_size=kernel_size
+        elif not isinstance(kernel_size,int):
+            raise('Error: the type of input kernel must be  int ')
+        self.stride=stride
+        self.padding=padding
+        self.kernel=[]
+        self.bias=[]
+        self.activator=SigmoidActivator()
+    def forward(self,input):
+        if self.padding:
+            input=np.lib.pad(input,((0,0),(self.padding,self.padding),(self.padding,self.padding)),'constant',constant_values=0)
+        self.inputsize=len(input[0][0])#输入尺寸
+        if self.inputsize<self.kernel_size:
+            raise('Error:the inputsize must be larger than the kernelsize')
+        self.input=input
+        self.outputsize=(self.inputsize-self.kernel_size)//self.stride+1#求输出尺寸
+        #卷积核 outchannel*outputsize*outputsize*(inchannel*kernelsize*kernelsize) 前部分为输出每个通道每个像素点，对应输入所有通道的所有Inputarray
+        if self.kernel==[] and self.bias==[]:#判断是否已经有卷积核和偏置的值
+            self.kernel = np.random.uniform(-0.1, 0.1, (self.outchannel, self.inchannel, self.kernel_size, self.kernel_size))
+            self.bias=np.random.uniform(-0.1,0.1,(self.outchannel,1))
+        self.output=np.zeros((self.outchannel,self.outputsize,self.outputsize))
+        for i in range(self.outchannel):
+            for j in range(self.outputsize):
+                for z in range(self.outputsize):
+                    input_array=self.input[:,j*self.stride:self.kernel_size+j*self.stride,z*self.stride:self.kernel_size+z*self.stride]
+                    self.output[i][j][z]=np.sum(np.multiply(input_array,self.kernel[i]))+self.bias[i]#可以跑通
+        self.output=self.activator.forward(self.output)
+        return self.output
+    def backward(self,delta):#更新梯度,输入上一层传递的误差
+        delta=np.reshape(delta,(self.outchannel,self.outputsize,self.outputsize))
+        self.kernel_grad=np.zeros((self.outchannel,  self.inchannel, self.kernel_size, self.kernel_size))
+        self.bias_grad=np.zeros((self.outchannel,1))
+        for i in range(self.outchannel):
+            delta1=delta[i]
+            for j in range(self.inchannel):
+                for x in range(self.kernel_size):
+                    for y in range(self.kernel_size):
+                        input_array=self.input[j][x * self.stride:self.outputsize + x * self.stride,y * self.stride:self.outputsize + y * self.stride]
+                        self.kernel_grad[i][j][x][y] = np.sum(np.multiply(delta1,input_array))
+            self.bias_grad[i]=np.sum(delta1)
+    def update(self,learning_rate):
+        self.kernel-=self.kernel_grad*learning_rate
+        self.bias-=self.bias_grad*learning_rate
+    def pooling(self):#2*2池化
+        output = np.zeros((self.outchannel, self.outputsize//2, self.outputsize//2))
+        for i in range(self.outchannel):
+            for j in range(self.outputsize//2):
+                for z in range(self.outputsize//2):
+                    output_array=self.output[:,2*j:2*j+2,2*z:2*z+2]
+                    output[i][j][z]=np.max(output_array)
+        return output
