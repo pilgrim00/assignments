@@ -1,0 +1,146 @@
+#单独定义激活器，和三种网络输入输出以及隐藏层，其中隐藏层可以无限叠加在合成网络中
+class SigmoidActivator(object):
+    def forward(self, input):
+        return 1.0 / (1.0 + np.exp(-input))
+
+    def backward(self, output):
+        # return output * (1 - output)
+        return np.multiply(output, (1 - output))  # 对应元素相乘
+class FullConnectedLayer3(object):
+    # 全连接层构造函数。input_size: 本层输入列向量的维度。output_size: 本层输出列向量的维度。activator: 激活函数
+    def __init__(self, input_size, output_size,activator,learning_rate):
+        self.input_size = input_size
+        self.output_size = output_size
+        self.activator = activator
+        self.W = np.random.uniform(-0.1, 0.1,(output_size, input_size))
+        # 初始化为-0.1~0.1之间的数。权重的大小。行数=输出个数，列数=输入个数。a=w*x，a和x都是列向量
+        # 偏置项b
+        self.b = np.zeros((output_size, 1))  # 全0列向量偏重项
+        # 学习速率
+        self.learning_rate = learning_rate
+        # 输出向量
+        self.output = np.zeros((output_size, 1)) #初始化为全0列向量
+    # 前向计算，预测输出。input_array: 输入列向量，维度必须等于input_size
+    def forward(self, input_array,label):   # 式2
+        self.input = input_array
+        self.output = self.activator.forward(np.dot(self.W, input_array) + self.b)
+        self.label=self.onehot(label)
+        return self.output
+
+    # 反向计算W和b的梯度。delta_array: 从上一层传递过来的误差项。列向量
+    def backward(self):
+        self.delta_array=self.output-self.label#相当于损失函数为交叉熵函数后的导数值
+        self.W_grad = np.dot(self.delta_array, self.input.T)   # 计算w的梯度。梯度=误差.*输入
+        self.b_grad = self.delta_array  #计算b的梯度,
+        a=np.dot(self.W.T,self.delta_array)
+        b=self.activator.backward(self.input)
+        b=self.qukuohao(b)
+        self.delta=np.multiply(a,b)#计算当前层的误差，以备上一层使用)
+    # 使用梯度下降算法更新权重
+    def update(self):
+        self.W -= self.learning_rate * self.W_grad
+        self.b -= self.learning_rate * self.b_grad
+    def onehot(self,y):
+        nums=[]
+        for i in range(10):
+            if y==i:
+              nums.append([1])
+            if y!=i:
+              nums.append([0])
+        return nums
+    def qukuohao(self,b):
+        for i in range(len(b)):
+            b[i]=b[i][0]
+        return b
+class FullConnectedLayer1(object):
+    # 全连接层构造函数。input_size: 本层输入列向量的维度。output_size: 本层输出列向量的维度。activator: 激活函数
+    def __init__(self, input_size, output_size,activator,learning_rate):
+        self.input_size = input_size
+        self.output_size = output_size
+        self.activator = activator
+        self.W = np.random.uniform(-0.1, 0.1,(output_size, input_size))
+        # 初始化为-0.1~0.1之间的数。权重的大小。行数=输出个数，列数=输入个数。a=w*x，a和x都是列向量
+        # 偏置项b
+        self.b = np.zeros((output_size, 1))  # 全0列向量偏重项
+        # 学习速率
+        self.learning_rate = learning_rate
+        # 输出向量
+        self.output = np.zeros((output_size, 1)) #初始化为全0列向量
+    # 前向计算，预测输出。input_array: 输入列向量，维度必须等于input_size
+    def forward(self, input_array):
+        self.input = input_array
+        self.output = self.activator.forward(np.dot(self.W, input_array) + self.b)
+        return self.output
+
+    # 反向计算W和b的梯度。delta_array: 从上一层传递过来的误差项。列向量
+    def backward(self,delta):
+        self.delta_array=delta#相当于损失函数为交叉熵函数后的导数值
+        self.W_grad = np.dot(self.delta_array, self.input.T)   # 计算w的梯度。梯度=误差.*输入
+        self.b_grad = self.delta_array  #计算b的梯度,
+
+    # 使用梯度下降算法更新权重
+    def update(self):
+        self.W -= self.learning_rate * self.W_grad
+        self.b -= self.learning_rate * self.b_grad
+class FullConnectedLayer2(object):
+    # 全连接层构造函数。input_size: 本层输入列向量的维度。output_size: 本层输出列向量的维度。activator: 激活函数
+    def __init__(self, input_size, output_size,activator,learning_rate):
+        self.input_size = input_size
+        self.output_size = output_size
+        self.activator = activator
+        self.W = np.random.uniform(-0.1, 0.1,(output_size, input_size))
+        # 初始化为-0.1~0.1之间的数。权重的大小。行数=输出个数，列数=输入个数。a=w*x，a和x都是列向量
+        # 偏置项b
+        self.b = np.zeros((output_size, 1))  # 全0列向量偏重项
+        # 学习速率
+        self.learning_rate = learning_rate
+        # 输出向量
+        self.output = np.zeros((output_size, 1)) #初始化为全0列向量
+    # 前向计算，预测输出。input_array: 输入列向量，维度必须等于input_size
+    def forward(self, input_array):
+        self.input = input_array
+        self.output = self.activator.forward(np.dot(self.W, input_array) + self.b)
+        return self.output
+
+    # 反向计算W和b的梯度。delta_array: 从上一层传递过来的误差项。列向量
+    def backward(self,delta):
+        self.delta_array=delta#相当于损失函数为交叉熵函数后的导数值
+        self.W_grad = np.dot(self.delta_array, self.input.T)  # 计算w的梯度。梯度=误差.*输入
+        self.b_grad = self.delta_array  # 计算b的梯度,
+        a = np.dot(self.W.T, self.delta_array)
+        b = self.activator.backward(self.input)
+        b = self.qukuohao(b)
+        self.delta = np.multiply(a, b)  # 计算当前层的误差，以备上一层使用)
+    # 使用梯度下降算法更新权重
+    def update(self):
+        self.W -= self.learning_rate * self.W_grad
+        self.b -= self.learning_rate * self.b_grad
+    def qukuohao(self,b):
+        for i in range(len(b)):
+            b[i]=b[i][0]
+        return b
+class manylayer():
+    def __init__(self, input_size, hidden_size1,hidden_size2,output_size, activator, learning_rate):
+        self.input_size = input_size
+        self.hidden_size1= hidden_size1
+        self.hidden_size2 = hidden_size2
+        self.output_size = output_size
+        self.activator = activator
+        self.learning_rate=learning_rate
+        self.layer1=FullConnectedLayer1(self.input_size,self.hidden_size1,self.activator,self.learning_rate)
+        self.layer2=FullConnectedLayer2(self.hidden_size1,self.hidden_size2,self.activator,self.learning_rate)
+        self.layer3=FullConnectedLayer3(self.hidden_size2,self.output_size,self.activator,self.learning_rate)
+    def forward(self, input_array,label):
+        out1=self.layer1.forward(input_array)
+        out2=self.layer2.forward(out1)
+        out3=self.layer3.forward(out2,label)
+        self.layer3.backward()
+        self.layer3.update()
+        self.layer2.backward(self.layer3.delta)
+        self.layer2.update()
+        self.layer1.backward(self.layer2.delta)
+        self.layer1.update()
+        return out3,self.loss(self.layer3.label,out3)
+    def loss(self,label,out):
+        label=np.array(label)
+        return -np.mean(np.multiply(np.log(out),label)+np.multiply(np.log(1-out),1-label))
